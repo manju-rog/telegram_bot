@@ -1,0 +1,19 @@
+# Python bytecode and cache folders.
+# These are auto-generated and should never be version-controlled.
+__pycache__/
+*.pyc
+
+# Environment file containing secret API keys.
+# NEVER commit this to a public repository.
+.env
+
+# Session files for all users.
+# The asterisk (*) is a wildcard that matches all user IDs.
+session_*.json
+
+# The machine learning model file(s).
+# These are often large binary files and can be regenerated from code.
+*.joblib
+
+# Log files created by the bot.
+*.log

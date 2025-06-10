@@ -1,7 +1,7 @@
 {
     "features": {
-        "AveBedrms": 10.0,
-        "AveRooms": 6.0
+        "AveBedrms": 2.0,
+        "AveRooms": 3.0
     },
     "conversation_history": [
         {
@@ -131,6 +131,78 @@
         {
             "role": "assistant",
             "content": "Confirmed. (Proceeding with prediction...)"
+        },
+        {
+            "role": "user",
+            "content": "Hi"
+        },
+        {
+            "role": "assistant",
+            "content": "That's a bit outside my floor plan! I'm focused on property prices. Do you have a house in mind?"
+        },
+        {
+            "role": "user",
+            "content": "I looking for 3 bedroom apartment"
+        },
+        {
+            "role": "assistant",
+            "content": "Okay, you're looking for a 3-bedroom apartment. To give you the most accurate price estimate, I need some more information. Could you please tell me the median income (MedInc) for the area, the average age of the houses (HouseAge), the average number of rooms per house (AveRooms), the population density (Population), the average occupancy (AveOccup), and the latitude and longitude coordinates (Latitude, Longitude)?  Also, how many rooms are there in total in this apartment?"
+        },
+        {
+            "role": "user",
+            "content": "Just 3 bedrooms and 5 rooms that\u2019s all give me the price"
+        },
+        {
+            "role": "assistant",
+            "content": "Okay, so we have a 3-bedroom apartment with a total of 5 rooms.  While this is a start, to give you a precise price estimate, I still need some additional details. Could you please provide the median income (MedInc) for the area, the average age of the houses (HouseAge), the population density (Population), the average occupancy (AveOccup), and the latitude and longitude coordinates (Latitude, Longitude)? This information will greatly improve the accuracy of my prediction.\n\nTo be sure, I've noted these new details:\n**AveBedrms: 3.0, AveRooms: 5.0**\n\nIs this correct?"
+        },
+        {
+            "role": "user",
+            "content": "Yes"
+        },
+        {
+            "role": "assistant",
+            "content": "Excellent! Let me run the numbers for you.\n\nBased on the current details, my estimated price is: **$124,706.01**\n\nFeel free to add more details for a refined estimate!"
+        },
+        {
+            "role": "user",
+            "content": "Ok what about the same but 3 more extra rooms"
+        },
+        {
+            "role": "assistant",
+            "content": "I received an unusual response from my core brain. Let's try that again."
+        },
+        {
+            "role": "user",
+            "content": "3 more rooms"
+        },
+        {
+            "role": "assistant",
+            "content": "Adding 3 more rooms significantly increases the size of the apartment. To ensure an accurate price estimate, could you please provide the median income (MedInc) for the area, the average age of the houses (HouseAge), the population density (Population), the average occupancy (AveOccup), and the latitude and longitude coordinates (Latitude, Longitude)?  This additional information, along with the increased room count, will help me refine my prediction.  Also, could you provide some context around this increased size?  Is this a conversion of an existing space or a new build, perhaps?  Knowing this may affect the price significantly.\n\nTo be sure, I've noted these new details:\n**AveRooms: 8.0**\n\nIs this correct?"
+        },
+        {
+            "role": "user",
+            "content": "No with this 2 bedrooms also"
+        },
+        {
+            "role": "assistant",
+            "content": "My apologies for the misunderstanding. Let's correct that. What are the right details?"
+        },
+        {
+            "role": "user",
+            "content": "3 rooms and 2 bedrooms"
+        },
+        {
+            "role": "assistant",
+            "content": "Okay, we're back to 3 rooms and 2 bedrooms.  To provide the most accurate price estimate, I still need the median income (MedInc) for the area, the average age of the houses (HouseAge), the population density (Population), the average occupancy (AveOccup), and the latitude and longitude coordinates (Latitude, Longitude).  This information will significantly improve the prediction's accuracy.  Let's get those details to refine the price!\n\nTo be sure, I've noted these new details:\n**AveRooms: 3.0, AveBedrms: 2.0**\n\nIs this correct?"
+        },
+        {
+            "role": "user",
+            "content": "Yes"
+        },
+        {
+            "role": "assistant",
+            "content": "Excellent! Let me run the numbers for you.\n\nBased on the current details, my estimated price is: **$157,124.01**\n\nFeel free to add more details for a refined estimate!"
         }
     ],
     "state": "gathering_info"
