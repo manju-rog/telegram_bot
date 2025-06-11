@@ -1,7 +1,7 @@
 {
     "features": {
-        "AveBedrms": 2,
-        "AveRooms": 2,
+        "AveBedrms": 3,
+        "AveRooms": null,
         "HouseAge": 5
     },
     "conversation_history": [
@@ -260,6 +260,22 @@
         {
             "role": "assistant",
             "content": "Ah, two rooms you say?  To give you the most accurate house price prediction, could you tell me the average number of rooms in your area?  Knowing this will help me paint a clearer picture of your property's value."
+        },
+        {
+            "role": "user",
+            "content": "hi i want a house with three bedrooms"
+        },
+        {
+            "role": "assistant",
+            "content": "Certainly!  A three-bedroom house sounds lovely. To give you the most accurate prediction, could you please tell me the average number of rooms in the house, its age, and the average occupancy?  Knowing the location (latitude and longitude) would also be extremely helpful!"
+        },
+        {
+            "role": "user",
+            "content": "no need 2 rooms"
+        },
+        {
+            "role": "assistant",
+            "content": "Ah, reducing the number of rooms.  To ensure I provide the most accurate valuation, could you please tell me the desired number of rooms?"
         }
     ],
     "state": "gathering_info"
