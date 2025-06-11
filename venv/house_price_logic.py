@@ -1,121 +1,133 @@
-import requests
-import json
-import re
+# house_price_logic.py
+
 import os
+import json
 import logging
+import google.generativeai as genai
 from dotenv import load_dotenv
-import ml_manager # Import our new ML manager
+
+# Import our specialized modules
+import ml_manager
+import data_analyst_tool
 
 # --- Configuration ---
 load_dotenv()
 logger = logging.getLogger(__name__)
-API_KEY = os.getenv("GEMINI_API_KEY")
-ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={API_KEY}"
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# --- Session Management (Unchanged) ---
+
+# --- Session Management ---
 def load_session(chat_id):
     session_file = f"session_{chat_id}.json"
     if os.path.exists(session_file):
-        with open(session_file, 'r') as f: session = json.load(f)
-    else:
-        session = {"features": {}, "conversation_history": []}
-    session.setdefault('state', 'gathering_info')
-    return session
+        with open(session_file, 'r') as f: return json.load(f)
+    return {"features": {}}
 
 def save_session(chat_id, session_data):
     with open(f"session_{chat_id}.json", 'w') as f: json.dump(session_data, f, indent=4)
 
 def reset_session(chat_id):
     if os.path.exists(f"session_{chat_id}.json"): os.remove(f"session_{chat_id}.json")
-    return "Memory wiped! I'm ready for a new property. What do you have in mind?"
+    return "Memory wiped! Let's start building a new house profile."
 
 # --- Core Logic ---
-def format_features_for_display(feature_dict):
-    if not feature_dict: return "No features specified yet."
-    return "\n".join([f"- {key}: `{value}`" for key, value in feature_dict.items()])
 
-def process_with_llm(user_input, session):
-    """The same production-grade LLM prompt from before."""
-    prompt = f"""
-    You are the "Properlytics Bot", a specialized AI assistant for house price prediction. Your personality is helpful, professional, and slightly witty.
-
-    **YOUR CORE INSTRUCTIONS:**
-
-    1.  **MAINTAIN YOUR PERSONA:** You ONLY discuss real estate. Gracefully deflect all other topics using varied, polite responses.
-    2.  **EXTRACT & MODIFY FEATURES:** Your main job is to extract or modify these features: {', '.join(ml_manager.FEATURE_NAMES)}. If a user says "change rooms to 6", update the AveRooms feature.
-    3.  **HANDLE OUT-OF-CONTEXT QUERIES:** If the user asks about anything other than housing, you MUST use a deflection like: "That's a bit outside my floor plan! Let's get back to real estate."
-    4.  **HANDLE VAGUE QUERIES:** If a query is about housing but too vague (e.g., "is my house expensive?"), ask clarifying questions to get concrete features.
-
-    **CURRENT CONVERSATION:**
-
-    *   **User's Most Recent Message:** "{user_input}"
-    *   **Features I Already Know:** {json.dumps(session.get("features", {}))}
-
-    ---
-    **YOUR OUTPUT MUST BE A SINGLE, VALID JSON OBJECT with these keys:**
-    1.  "is_house_query": boolean
-    2.  "response": Your conversational response.
-    3.  "features": A dictionary of any NEW or MODIFIED features you extracted.
+# --- THE NEW, SMARTER FEATURE EXTRACTOR ---
+def feature_extractor_llm(user_input, existing_features):
     """
-    # ... (The rest of the LLM call logic remains the same as the previous version)
-    headers = {"Content-Type": "application/json"}
-    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    Uses an LLM to extract features and determines if the user is starting a new house profile.
+    """
+    prompt = f"""
+    You are an expert feature extractor for a house price prediction model.
+    Your task is to analyze the user's query and extract any of the following features: {ml_manager.FEATURE_NAMES}.
+
+    **CRITICAL TASK:** You must also determine the user's intent.
+    - If the query seems to describe a **new house from scratch** (e.g., "what's the price of a house with...", "I want a house that has..."), you must include `"reset": true`.
+    - If the query seems to be **adding a detail** to an existing house (e.g., "now make it 10 years old", "and 5 rooms"), you must include `"reset": false`.
+
+    Current known features: {json.dumps(existing_features)}
+    User query: "{user_input}"
+
+    Respond with ONLY a JSON object containing two keys:
+    1. "reset": a boolean (true or false).
+    2. "features": a JSON object of the features you found in the LATEST query.
+    
+    Example 1 (Starting Over):
+    User Query: "i want to know the price of house with 3 bedrooms"
+    Your Response: {{"reset": true, "features": {{"AveBedrms": 3}}}}
+
+    Example 2 (Adding Detail):
+    User Query: "and make it 10 years old"
+    Your Response: {{"reset": false, "features": {{"HouseAge": 10}}}}
+    """
     try:
-        response = requests.post(ENDPOINT, headers=headers, json=data, timeout=20)
-        response.raise_for_status()
-        output = response.json()
-        llm_response_text = output["candidates"][0]["content"]["parts"][0]["text"]
-        json_match = re.search(r'\{.*\}', llm_response_text, re.DOTALL)
-        if json_match: return json.loads(json_match.group(0))
-        else:
-            logger.warning(f"LLM did not return valid JSON. Response: {llm_response_text}")
-            return {"is_house_query": False, "response": "I seem to be having a little trouble processing that. Could you please rephrase?", "features": {}}
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Network error calling Gemini API: {e}")
-        return {"is_house_query": False, "response": "I'm having trouble connecting to my services right now. Please try again in a moment.", "features": {}}
+        llm = genai.GenerativeModel('gemini-1.5-flash-latest')
+        response = llm.generate_content(prompt)
+        cleaned_response = response.text.strip().replace('```json', '').replace('```', '')
+        return json.loads(cleaned_response)
     except Exception as e:
-        logger.error(f"Error parsing LLM response: {e}")
-        return {"is_house_query": False, "response": "I received an unusual response. Let's try that again.", "features": {}}
+        logger.error(f"Error in feature extractor: {e}")
+        return {"reset": False, "features": {}} # Default to not resetting on error
 
-# --- Main Handler (Completely Refactored for Better UX) ---
+def smart_router_llm(user_input):
+    """
+    Decides if the user is asking a factual data question or building a house profile.
+    """
+    prompt = f"""
+    Analyze the user's query and determine its category.
+    The categories are:
+    1. "data_query": The user is asking a factual question about a dataset (e.g., 'how many', 'what is the average', 'show me the top 5').
+    2. "prediction_query": The user is providing details about a house to get a price prediction (e.g., 'a house with 3 rooms', 'the age is 10 years').
+    3. "other": The user is having a general conversation or asking something unrelated.
+
+    User Query: "{user_input}"
+
+    Respond with ONLY one word: "data_query", "prediction_query", or "other".
+    """
+    llm = genai.GenerativeModel('gemini-1.5-flash-latest')
+    response = llm.generate_content(prompt)
+    return response.text.strip()
+
+
+# --- Main Handler: The Ultimate Combination ---
 def handle_user_message(user_input, chat_id):
-    session = load_session(chat_id)
-    session["conversation_history"].append({"role": "user", "content": user_input})
-
-    # Handle explicit commands first
     if user_input.lower().strip() == '/reset':
         return reset_session(chat_id)
+
+    intent = smart_router_llm(user_input)
+    logger.info(f"User intent detected: {intent}")
+
+    if intent == "data_query":
+        return data_analyst_tool.query_housing_data(user_input)
     
-    if user_input.lower().strip() == '/predict':
-        if len(session['features']) < 2:
-            return "I need at least two features to make a prediction. What else can you tell me about the property?"
+    elif intent == "prediction_query":
+        session = load_session(chat_id)
         
-        prediction = ml_manager.predict_price(session['features'])
-        return f"Based on the current features, my estimated price is: **${prediction:,.2f}**"
-
-    # Process natural language with the LLM
-    result = process_with_llm(user_input, session)
-    session["conversation_history"].append({"role": "assistant", "content": result['response']})
-
-    # If the LLM didn't understand or it was off-topic, just return its response.
-    if not result.get("is_house_query"):
-        save_session(chat_id, session)
-        return result['response']
-
-    # Update features if any were extracted/modified
-    if result.get("features"):
-        session['features'].update(result['features'])
-
-    # Build a comprehensive response with a summary
-    current_features_summary = format_features_for_display(session['features'])
-    
-    response_text = f"{result['response']}\n\n**Current Property Details:**\n{current_features_summary}"
-
-    # Guide the user on what to do next
-    if len(session['features']) >= 2:
-        response_text += "\n\nFeel free to add more details, modify existing ones, or type `/predict` to get an estimate."
-    else:
-        response_text += "\n\nI still need a bit more information to make a good prediction."
+        # --- THE NEW LOGIC TO HANDLE RESET ---
+        extraction_result = feature_extractor_llm(user_input, session['features'])
         
-    save_session(chat_id, session)
-    return response_text
+        # If the LLM says to reset, clear the old features first.
+        if extraction_result.get("reset", False):
+            logger.info("Resetting features based on user query.")
+            session['features'] = {}
+            
+        new_features = extraction_result.get("features", {})
+        if new_features:
+            session['features'].update(new_features)
+            save_session(chat_id, session)
+
+        if session['features']:
+            prediction = ml_manager.predict_price(session['features'])
+            
+            feature_summary = "\n".join([f"- {key}: `{value}`" for key, value in session['features'].items()])
+            response_text = (
+                f"**Updated Profile & Estimate:**\n"
+                f"{feature_summary}\n\n"
+                f"Estimated Price: **${prediction:,.2f}**"
+            )
+            return response_text
+        else:
+            return "I couldn't find any specific house features in your message. Could you try describing the house again?"
+
+    else: # intent == "other"
+        return "I can help with two things: answering factual questions about the housing dataset, or predicting a price for a house you describe. What would you like to do?"
