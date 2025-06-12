@@ -5,7 +5,7 @@ import json
 import logging
 import google.generativeai as genai
 from dotenv import load_dotenv
-
+#core logic prompt
 import ml_manager
 import data_analyst_tool
 
