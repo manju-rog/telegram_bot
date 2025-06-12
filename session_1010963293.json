@@ -1,5 +1,5 @@
 {
-    "flow": "data_query",
+    "flow": "feature_selection",
     "selected_features": [],
     "feature_values": {}
 }
