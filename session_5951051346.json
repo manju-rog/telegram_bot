@@ -1,5 +1,5 @@
 {
-    "features": {
-        "AveBedrms": 3
-    }
+    "flow": "data_query",
+    "selected_features": [],
+    "feature_values": {}
 }
