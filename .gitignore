@@ -1,6 +1,7 @@
 # Python bytecode and cache folders.
 # These are auto-generated and should never be version-controlled.
 __pycache__/
+.DS_Store
 *.pyc
 
 # Environment file containing secret API keys.
