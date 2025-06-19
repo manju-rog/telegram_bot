@@ -5,7 +5,7 @@ python-telegram-bot
 vosk
 pydub
 gtts
-
+google-generativeai
 # Machine Learning and Data
 scikit-learn
 pandas
